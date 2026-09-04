@@ -97,7 +97,7 @@ public static class Commands
 
         output.WriteLine(
             $"Sending a test alert for {decisions.Count} volume(s) via {settings.Email.Provider} "
-            + $"to {settings.Email.To}...");
+            + $"to {Recipients.Describe(settings.Email.To, settings.Email.Cc, settings.Email.Bcc)}...");
 
         var outcome = await services.GetRequiredService<AlertNotifier>()
             .NotifyAsync(AlertEmailKind.Alert, decisions, settings.Email, nowUtc, cancellationToken)

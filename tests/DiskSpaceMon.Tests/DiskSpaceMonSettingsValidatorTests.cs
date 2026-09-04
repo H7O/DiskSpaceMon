@@ -140,4 +140,25 @@ public class DiskSpaceMonSettingsValidatorTests
     [InlineData(null, 0)]
     public void RecipientsAreSplitOnCommasSemicolonsAndWhitespace(string? value, int expected)
         => Assert.Equal(expected, Recipients.Split(value).Count);
+
+    [Fact]
+    public void RecipientsOnBccAloneAreStillReported()
+    {
+        // Alerting only a bcc list is an ordinary way to configure this, and reporting just the
+        // 'to' field made the log say the message had been sent to nobody.
+        Assert.Equal(
+            "bcc ops@example.com", Recipients.Describe(to: "", cc: null, bcc: "ops@example.com"));
+    }
+
+    [Fact]
+    public void EveryPopulatedRecipientFieldIsNamed()
+    {
+        Assert.Equal(
+            "to a@x.com, b@x.com; cc c@x.com; bcc d@x.com",
+            Recipients.Describe("a@x.com; b@x.com", "c@x.com", "d@x.com"));
+    }
+
+    [Fact]
+    public void NoRecipientsSaysSo()
+        => Assert.Equal("no recipients", Recipients.Describe(null, "", "   "));
 }

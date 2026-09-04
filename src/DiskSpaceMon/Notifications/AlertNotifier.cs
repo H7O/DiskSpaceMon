@@ -76,7 +76,7 @@ public sealed class AlertNotifier(
                 "Sent '{Subject}' via {Provider} to {Recipients}.",
                 message.Subject,
                 settings.Provider,
-                string.Join(", ", Recipients.Split(settings.To)));
+                Recipients.Describe(settings.To, settings.Cc, settings.Bcc));
 
             return NotifyOutcome.Sent;
         }

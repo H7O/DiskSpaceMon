@@ -164,4 +164,35 @@ public static class Recipients
             ? []
             : value.Split(Separators, StringSplitOptions.RemoveEmptyEntries
                                       | StringSplitOptions.TrimEntries);
+
+    /// <summary>
+    /// Describes where a message went, for the log and for <c>test-email</c>.
+    /// </summary>
+    /// <remarks>
+    /// Every field is named, because reporting only <c>to</c> would say a message went nowhere
+    /// whenever the recipients are all on <c>bcc</c> -- which is a perfectly ordinary way to
+    /// configure an alert, and which made the log read "Sent ... to ." until this existed.
+    /// </remarks>
+    /// <param name="to">The <c>to</c> list.</param>
+    /// <param name="cc">The <c>cc</c> list.</param>
+    /// <param name="bcc">The <c>bcc</c> list.</param>
+    /// <returns>
+    /// Something like <c>to a@b.com; bcc c@d.com</c>, or <c>no recipients</c> if all three are
+    /// empty.
+    /// </returns>
+    public static string Describe(string? to, string? cc, string? bcc)
+    {
+        var parts = new List<string>(3);
+        Add("to", to);
+        Add("cc", cc);
+        Add("bcc", bcc);
+
+        return parts.Count == 0 ? "no recipients" : string.Join("; ", parts);
+
+        void Add(string label, string? value)
+        {
+            var addresses = Split(value);
+            if (addresses.Count > 0) parts.Add($"{label} {string.Join(", ", addresses)}");
+        }
+    }
 }
