@@ -27,6 +27,27 @@
          settings and the generated appsettings.json only add noise. Settings live in
          settings/settings.xml. -->
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+
+    <!-- Symbols travel inside the assembly rather than as a loose .pdb, so a portable build is
+         one executable and a settings folder, and a stack trace in the log still names lines. -->
+    <DebugType>embedded</DebugType>
+
+    <!-- Catches code that would silently misbehave once bundled - Assembly.Location returning
+         empty, and the like. Worth having on permanently rather than discovering it in a
+         release build. -->
+    <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
+
+    <!--
+      A self-contained publish is meant to be portable: one executable with the .NET runtime
+      inside it, so the server needs nothing installed. Compression halves it, 77 MB down to
+      37 MB, for roughly 80 ms of extra startup - a cost a service pays once and a 'check' run
+      barely notices.
+
+      Conditioned on SelfContained so publishing with the self-contained switch is all anyone has
+      to remember, and an ordinary framework-dependent build stays a plain folder.
+    -->
+    <PublishSingleFile Condition="'$(SelfContained)' == 'true'">true</PublishSingleFile>
+    <EnableCompressionInSingleFile Condition="'$(SelfContained)' == 'true'">true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>

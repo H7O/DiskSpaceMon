@@ -105,6 +105,11 @@ Not done yet because it trades one small surprise for another: a first-time user
 `settings.xml` until they ran DiskSpaceMon once, and being able to find it immediately was the point of
 the `settings/` folder.
 
+It would also finish the portable story. The portable release is one executable with the runtime
+inside it, but the executable alone still cannot start: it needs `settings/settings.xml` beside it,
+which is why the download is a zip rather than a bare `.exe`. Embedding the defaults as resources
+and writing them out when they are missing would make a single copied file genuinely enough.
+
 ---
 
 ## 3. Validate recipient addresses at startup

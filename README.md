@@ -32,11 +32,15 @@ Data    D:\   1.8 TB    412.6 GB  22.4%   50 GB         ok
 
 ## Quick start
 
+Download `…-win-x64-portable.zip` from [Releases](../../releases) and unzip it to `C:\Apps\DiskSpaceMon`
+— that is one executable with the .NET runtime inside it, so there is nothing to install. Or build
+it yourself:
+
 ```powershell
 git clone <this repo>
 cd DiskSpaceMon
 
-dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -o C:\Apps\DiskSpaceMon
+dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -r win-x64 --self-contained true -o C:\Apps\DiskSpaceMon
 cd C:\Apps\DiskSpaceMon
 
 notepad settings\settings.xml     # drives, thresholds, addresses, mail server
@@ -339,9 +343,14 @@ its error messages, the environment-variable layering, threshold evaluation, the
 including the failed-send and unreadable-volume cases, and the templates rendered end to end through
 the real engine.
 
-Publishing for deployment:
+Publishing for deployment. The self-contained switch is what makes it portable — the project turns
+that into one compressed executable with the runtime inside, so the target server needs no .NET:
 
 ```powershell
+# portable: DiskSpaceMon.exe (37 MB) + settings\, nothing to install
+dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -r win-x64 --self-contained true -o C:\Apps\DiskSpaceMon
+
+# framework-dependent: a 5 MB folder, needs the .NET 10 runtime on the server
 dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -o C:\Apps\DiskSpaceMon
 ```
 
@@ -364,14 +373,26 @@ git push origin v1.0.0
 [`.github/workflows/release.yml`](.github/workflows/release.yml) runs the tests first, so a tag
 that does not build never becomes a release. It then attaches two zips for Windows x64:
 
-| Download | Size | Needs |
+| Download | Unpacks to | Needs |
 |---|---|---|
-| `…-win-x64-framework-dependent.zip` | 1.4 MB zipped, 5 MB on disk | the .NET 10 runtime installed on the server |
-| `…-win-x64-self-contained.zip` | 37 MB zipped, 82 MB on disk | nothing |
+| `…-win-x64-portable.zip` | one 37 MB `DiskSpaceMon.exe` plus `settings\` | **nothing** — the .NET runtime is inside the executable |
+| `…-win-x64-framework-dependent.zip` | a 5 MB folder of assemblies plus `settings\` | the .NET 10 runtime installed on the server |
 
-Both contain the executable, `settings/`, the README and the licence — unzip, edit
-`settings\settings.xml`, and run `DiskSpaceMon.exe check`. A tag with a hyphen in it
-(`v1.0.0-beta.1`) is published as a prerelease, so it does not become the repository's *latest*.
+Both also carry the README and the licence. Unzip, edit `settings\settings.xml`, run
+`DiskSpaceMon.exe check`. A tag with a hyphen in it (`v1.0.0-beta.1`) is published as a
+prerelease, so it does not become the repository's *latest*.
+
+**Take the portable one unless you have a reason not to.** There is nothing to install and
+nothing to keep patched in step: copy the two items onto the server, register the service, done.
+The runtime is compressed inside the executable, which costs about 80 ms of extra startup — paid
+once by a service that then runs for months.
+
+To build it yourself, the self-contained switch is the whole trick; the project turns that into a
+single compressed file on its own:
+
+```powershell
+dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -r win-x64 --self-contained true -o C:\Apps\DiskSpaceMon
+```
 
 ## Not built yet
 
