@@ -107,7 +107,16 @@
     <from>diskspacemon@example.com</from>
     <fromDisplayName>DiskSpaceMon</fromDisplayName>
 
-    <!-- Separate several addresses with commas or semicolons. -->
+    <!--
+      Who gets the alerts. Each of these three is its own list, separated by commas or
+      semicolons, and any combination works: put the on-call rota in <to>, a team alias in
+      <cc>, an archive mailbox in <bcc>, or use just one of them. Only one address in total
+      is required.
+
+      Prefer to have at least one address in <to>. A message whose recipients are all on <bcc>
+      arrives with no To header at all, which some clients show as "undisclosed recipients" and
+      a few strict filters treat as suspicious.
+    -->
     <to>ops@example.com</to>
     <cc></cc>
     <bcc></bcc>

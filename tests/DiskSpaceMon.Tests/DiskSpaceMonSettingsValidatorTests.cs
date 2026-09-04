@@ -118,6 +118,26 @@ public class DiskSpaceMonSettingsValidatorTests
         Assert.Contains(result.Failures!, f => f.Contains("at least one recipient"));
     }
 
+    [Theory]
+    [InlineData("ops@example.com", "", "")]
+    [InlineData("", "team@example.com", "")]
+    [InlineData("", "", "archive@example.com")]
+    [InlineData("ops@example.com", "team@example.com", "archive@example.com")]
+    [InlineData("a@x.com; b@x.com", "", "archive@example.com")]
+    public void AnyCombinationOfToCcAndBccIsAccepted(string to, string cc, string bcc)
+    {
+        // How the recipients are split across the three fields is the operator's business, not
+        // this application's. Only the total matters.
+        var result = Validate(s =>
+        {
+            s.Email.To = to;
+            s.Email.Cc = cc;
+            s.Email.Bcc = bcc;
+        });
+
+        Assert.True(result.Succeeded, string.Join("; ", result.Failures ?? []));
+    }
+
     [Fact]
     public void TurningEmailOffSkipsItsChecksEntirely()
     {

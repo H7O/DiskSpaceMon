@@ -144,13 +144,27 @@ already reported. The service account needs write access to its folder.
 | `provider` | `Smtp` or `Graph`. Changing it takes effect on the next sweep. |
 | `from` | The sending mailbox. |
 | `fromDisplayName` | Display name beside it. |
-| `to`, `cc`, `bcc` | Addresses, separated by commas or semicolons. |
+| `to`, `cc`, `bcc` | Three independent lists, each separated by commas or semicolons. Any combination works; one address in total is required. |
 | `subjectAlert`, `subjectRecovery` | Subject lines. Templates, not plain strings. |
 | `templates/alert`, `templates/recovery` | Paths to the body templates. |
 | `smtp/host`, `smtp/port`, `smtp/enableSsl` | The mail server. 587 with SSL for STARTTLS, 25 for an unauthenticated relay. |
 | `smtp/username`, `smtp/password` | Leave the password blank for an unauthenticated relay. A blank username falls back to `from`. |
 | `graph/tenantId`, `graph/clientId`, `graph/clientSecret` | The Azure app registration. |
 | `graph/saveToSentItems` | Whether Graph keeps a copy in the sending mailbox. |
+
+Split the recipients however suits you — the on-call rota in `to`, a team alias in `cc`, an
+archive mailbox in `bcc`, or everything in one field:
+
+```xml
+<to>oncall@example.com; duty-engineer@example.com</to>
+<cc>infrastructure@example.com</cc>
+<bcc>alert-archive@example.com</bcc>
+```
+
+Try to keep at least one address in `to`. A message whose recipients are all on `bcc` is
+delivered with no `To` header at all — Gmail accepts it and it still passes SPF, DKIM and DMARC,
+but some clients render it as *undisclosed recipients* and a few strict filters treat a missing
+`To` as mildly suspicious.
 
 ### logging
 
