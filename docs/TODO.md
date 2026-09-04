@@ -139,7 +139,25 @@ throw on `CurrentValue`, which is the whole point of the test.
 
 ---
 
-## 5. Let alerts/stateFile change without a restart
+## 5. Exercise the Graph sender against a real tenant
+
+`SmtpEmailSender` has been proven end to end: a local sink over a real socket, then Gmail on 587
+with STARTTLS and an app password from the environment, sent both by hand and by the installed
+service, with SPF, DKIM and DMARC passing at the far end.
+
+`GraphEmailSender` has never made a single request. It is written against the documented
+`Com.H.GraphAPI` surface and it compiles, but "compiles" is not "works" — the things that break a
+Graph integration are an app registration missing the `Mail.Send` *application* permission,
+consent not granted, a `from` address that is not a real mailbox in the tenant, and a tenant
+policy that blocks app-only sending. None of those show up until a request is made.
+
+Needs an Azure app registration to test. Until someone runs `DiskSpaceMon test-email` with
+`<provider>Graph</provider>` and sees the message arrive, treat that half of the email feature as
+unverified, and say so in release notes rather than implying both paths are equal.
+
+---
+
+## 6. Let alerts/stateFile change without a restart
 
 The state file path is resolved once, when the DI container builds the store. Every other setting
 is picked up within seconds of the file being saved; this one is not, and the README says so
