@@ -352,6 +352,27 @@ afford to lose in environment variables, where a publish cannot reach them.
 
 ---
 
+## Releases
+
+Pushing a version tag builds and publishes a release:
+
+```powershell
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+[`.github/workflows/release.yml`](.github/workflows/release.yml) runs the tests first, so a tag
+that does not build never becomes a release. It then attaches two zips for Windows x64:
+
+| Download | Size | Needs |
+|---|---|---|
+| `…-win-x64-framework-dependent.zip` | ~5 MB | the .NET 10 runtime installed on the server |
+| `…-win-x64-self-contained.zip` | ~82 MB | nothing |
+
+Both contain the executable, `settings/`, the README and the licence — unzip, edit
+`settings\settings.xml`, and run `DiskSpaceMon.exe check`. A tag with a hyphen in it
+(`v1.0.0-beta.1`) is published as a prerelease, so it does not become the repository's *latest*.
+
 ## Not built yet
 
 [docs/TODO.md](docs/TODO.md) carries the follow-ups worth doing, with the reasoning behind each

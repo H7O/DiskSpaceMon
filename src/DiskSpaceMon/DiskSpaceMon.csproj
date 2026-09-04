@@ -8,6 +8,10 @@
     <LangVersion>latest</LangVersion>
     <RootNamespace>DiskSpaceMon</RootNamespace>
     <AssemblyName>DiskSpaceMon</AssemblyName>
+
+    <!-- What a local build reports. A release build overrides it from the git tag
+         (-p:Version=…), so this number only ever shows up in a developer's own output. -->
+    <Version>0.1.0</Version>
     <UserSecretsId>diskspacemon-c1f0a2b4</UserSecretsId>
     <InvariantGlobalization>true</InvariantGlobalization>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>

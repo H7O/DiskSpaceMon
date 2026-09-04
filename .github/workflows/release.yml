@@ -1,0 +1,92 @@
+# Builds and publishes a GitHub release when a version tag is pushed.
+#
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# The tests run first, so a tag that does not build never becomes a release. Everything runs on
+# Windows because that is what DiskSpaceMon targets, and because the tests assert Windows path
+# behaviour -- 'C:' and 'C:\' naming one volume is only true there.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Needed by 'gh release create'. Nothing else in this workflow writes to the repository.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # v1.2.3 -> 1.2.3, and anything with a hyphen (v1.2.3-beta.1) is published as a prerelease
+      # so it does not become the repository's "latest".
+      - name: Read the version from the tag
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$version" == *-* ]]; then
+            echo "prerelease=--prerelease" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Building $version"
+
+      - name: Test
+        run: dotnet test DiskSpaceMon.slnx -c Release --nologo
+
+      # Two builds, because the right answer depends on the server. Framework-dependent is about
+      # 5 MB and needs the .NET 10 runtime installed; self-contained is about 82 MB and needs
+      # nothing at all.
+      - name: Publish, framework-dependent
+        run: >
+          dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj
+          -c Release -r win-x64 --self-contained false
+          -p:Version=${{ steps.version.outputs.version }}
+          -o publish/framework-dependent
+
+      - name: Publish, self-contained
+        run: >
+          dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:Version=${{ steps.version.outputs.version }}
+          -o publish/self-contained
+
+      - name: Package
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force dist | Out-Null
+
+          foreach ($flavour in 'framework-dependent', 'self-contained') {
+            # So whoever unzips it on a server has the settings reference and the licence to hand.
+            Copy-Item README.md, LICENSE "publish/$flavour/"
+
+            $zip = "dist/DiskSpaceMon-$env:VERSION-win-x64-$flavour.zip"
+            Compress-Archive -Path "publish/$flavour/*" -DestinationPath $zip
+            Write-Host "$zip  $([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB"
+          }
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          --title "DiskSpaceMon ${{ steps.version.outputs.version }}"
+          --generate-notes
+          ${{ steps.version.outputs.prerelease }}
+          dist/*.zip
