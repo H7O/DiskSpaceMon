@@ -366,8 +366,8 @@ that does not build never becomes a release. It then attaches two zips for Windo
 
 | Download | Size | Needs |
 |---|---|---|
-| `…-win-x64-framework-dependent.zip` | ~5 MB | the .NET 10 runtime installed on the server |
-| `…-win-x64-self-contained.zip` | ~82 MB | nothing |
+| `…-win-x64-framework-dependent.zip` | 1.4 MB zipped, 5 MB on disk | the .NET 10 runtime installed on the server |
+| `…-win-x64-self-contained.zip` | 37 MB zipped, 82 MB on disk | nothing |
 
 Both contain the executable, `settings/`, the README and the licence — unzip, edit
 `settings\settings.xml`, and run `DiskSpaceMon.exe check`. A tag with a hyphen in it
