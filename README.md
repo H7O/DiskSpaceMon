@@ -294,6 +294,7 @@ src/DiskMon/
   Hosting/                 the worker, the commands, the sc.exe wrapper
   Com.H/Template2/         a verbatim copy of Com.H.Text.Template2 (see its VENDORED.md)
 tests/DiskMon.Tests/
+docs/TODO.md               follow-ups worth doing, and the reasoning behind each
 ```
 
 ### Detecting how it was started
@@ -350,6 +351,17 @@ wins and your edits are lost. Back the file up before an upgrade, or keep the va
 afford to lose in environment variables, where a publish cannot reach them.
 
 ---
+
+## Not built yet
+
+[docs/TODO.md](docs/TODO.md) carries the follow-ups worth doing, with the reasoning behind each
+so they can be picked up cold. The largest is an append-only **alert history** in SQLite through
+`Com.H.Data.Common`, with its statements in `settings/sql.xml` — which would answer "how often did
+this volume go low last quarter, and for how long" without reading a year of log files.
+
+That is deliberately separate from the state store this already has. Restart-safety works today
+through `state/alert-state.json`; history is a different feature, and the one that would justify
+the dependency.
 
 ## License
 
