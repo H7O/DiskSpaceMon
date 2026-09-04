@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  DiskSpaceMon settings.
+
+  Editing this file takes effect within a few seconds; there is no need to restart the service.
+  If an edit leaves the file unreadable, DiskSpaceMon logs the problem and keeps running on the last
+  settings that loaded cleanly, so a typo at 2am does not take the monitoring down.
+
+  A blank element means "not set", not "set to empty", so <minFreeGb></minFreeGb> falls back
+  to the default rather than becoming zero.
+
+  Any value here can be overridden by an environment variable, which is the place to put
+  secrets. The name is DISKSPACEMON_ followed by the path to the value with __ between the levels:
+
+      DISKSPACEMON_email__smtp__password
+      DISKSPACEMON_email__graph__clientSecret
+      DISKSPACEMON_monitoring__disks__0__minFreePercent
+
+  The environment wins over this file, so a value set there does not need removing from here.
+
+  Verify a change before trusting it:  DiskSpaceMon check
+  Verify the email path once:          DiskSpaceMon test-email
+-->
+
+<diskspacemon>
+
+  <monitoring>
+
+    <!-- Seconds between sweeps. The first sweep runs at startup. Minimum 5. -->
+    <intervalSeconds>300</intervalSeconds>
+
+    <!--
+      Watch every ready fixed drive using the defaults below, on top of the drives listed under
+      <disks>. An entry under <disks> always wins for the drive it names, including one with
+      <enabled>false</enabled>, which is how a drive is excluded.
+    -->
+    <includeAllFixedDrives>false</includeAllFixedDrives>
+
+    <!--
+      Thresholds for any drive that does not set its own. Set either or both: a drive alerts on
+      whichever limit trips first. Ten per cent of a 20 TB array is 2 TB, which is why the
+      absolute limit exists.
+    -->
+    <defaults>
+      <minFreePercent>10</minFreePercent>
+      <minFreeGb></minFreeGb>
+    </defaults>
+
+    <!--
+      The drives to watch. Add or remove <disk> elements freely; they are read as a list.
+
+      <path> takes C, C:, C:\ or a mount point such as D:\sql\data.
+      <label> is what the email calls it. Without one, the volume's own label is used.
+    -->
+    <disks>
+
+      <disk>
+        <path>C:\</path>
+        <label>System</label>
+        <minFreePercent>15</minFreePercent>
+        <minFreeGb>20</minFreeGb>
+      </disk>
+
+      <disk>
+        <path>D:\</path>
+        <label>Data</label>
+        <minFreeGb>50</minFreeGb>
+        <enabled>false</enabled>
+      </disk>
+
+    </disks>
+
+  </monitoring>
+
+  <alerts>
+
+    <!--
+      Hours of silence after an alert before the same drive, still below its threshold, emails
+      again. Set it to 0 to email only when a drive crosses the line, never while it stays over.
+    -->
+    <reAlertAfterHours>6</reAlertAfterHours>
+
+    <!-- Email once when a drive climbs back above its threshold. -->
+    <sendRecoveryEmail>true</sendRecoveryEmail>
+
+    <!--
+      Where the alert history is kept, so a restart does not re-send alerts for drives that were
+      already reported. The service account needs write access to this folder.
+      Changing this path takes effect on the next restart.
+    -->
+    <stateFile>state/alert-state.json</stateFile>
+
+  </alerts>
+
+  <email>
+
+    <!-- Set to false to log findings without sending anything. -->
+    <enabled>true</enabled>
+
+    <!--
+      Smtp  - a mail server, via the Com.H package.
+      Graph - Microsoft 365 via the Graph API, using the <graph> settings below.
+    -->
+    <provider>Smtp</provider>
+
+    <from>diskspacemon@example.com</from>
+    <fromDisplayName>DiskSpaceMon</fromDisplayName>
+
+    <!-- Separate several addresses with commas or semicolons. -->
+    <to>ops@example.com</to>
+    <cc></cc>
+    <bcc></bcc>
+
+    <!-- Subjects are templates too. {{machineName}} and {{diskCount}} are available. -->
+    <subjectAlert><![CDATA[[DiskSpaceMon] Low disk space on {{machineName}} ({{diskCount}})]]></subjectAlert>
+    <subjectRecovery><![CDATA[[DiskSpaceMon] Disk space recovered on {{machineName}}]]></subjectRecovery>
+
+    <!-- Bodies. Edit the HTML directly; see the README for the values a template can use. -->
+    <templates>
+      <alert>settings/templates/alert.html</alert>
+      <recovery>settings/templates/recovery.html</recovery>
+    </templates>
+
+    <!-- Used when <provider> is Smtp. Leave <password> blank for an unauthenticated relay. -->
+    <smtp>
+      <host>smtp.example.com</host>
+      <port>587</port>
+      <enableSsl>true</enableSsl>
+      <username></username>
+      <password></password>
+    </smtp>
+
+    <!--
+      Used when <provider> is Graph. Needs an Azure app registration with the Mail.Send
+      APPLICATION permission and admin consent granted.
+      Prefer DISKSPACEMON_email__graph__clientSecret over writing the secret here.
+    -->
+    <graph>
+      <tenantId></tenantId>
+      <clientId></clientId>
+      <clientSecret></clientSecret>
+      <saveToSentItems>false</saveToSentItems>
+    </graph>
+
+  </email>
+
+  <logging>
+
+    <!-- Trace, Debug, Information, Warning, Error, Critical or None. -->
+    <logLevel>
+      <default>Information</default>
+      <Microsoft.Hosting.Lifetime>Information</Microsoft.Hosting.Lifetime>
+    </logLevel>
+
+    <!--
+      Log files, written as <directory>/YYYY/MM/DD/log.txt. This is the only sink a service has
+      until its Event Log source exists, so leaving it on is worth it.
+      retainDays deletes older folders; leave it blank to keep everything.
+    -->
+    <fileLog>
+      <enabled>true</enabled>
+      <directory>logs</directory>
+      <retainDays>30</retainDays>
+    </fileLog>
+
+  </logging>
+
+</diskspacemon>

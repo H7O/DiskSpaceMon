@@ -1,4 +1,4 @@
-# DiskMon
+# DiskSpaceMon
 
 Watches free space on the volumes you name and emails when one drops below its threshold. It runs
 as a Windows service or as a terminal application from the same executable, and it works out which
@@ -8,7 +8,7 @@ Everything an operator needs to change lives in one commented file, `settings/se
 to the binaries rather than among them.
 
 ```
-> DiskMon check
+> DiskSpaceMon check
 
 VOLUME  PATH  TOTAL     FREE      FREE %  THRESHOLD     STATE
 ------  ----  --------  --------  ------  ------------  -----
@@ -34,17 +34,17 @@ Data    D:\   1.8 TB    412.6 GB  22.4%   50 GB         ok
 
 ```powershell
 git clone <this repo>
-cd DiskMon
+cd DiskSpaceMon
 
-dotnet publish src/DiskMon/DiskMon.csproj -c Release -o C:\Apps\DiskMon
-cd C:\Apps\DiskMon
+dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -o C:\Apps\DiskSpaceMon
+cd C:\Apps\DiskSpaceMon
 
 notepad settings\settings.xml     # drives, thresholds, addresses, mail server
-.\DiskMon.exe check               # confirm it reads what you meant
-.\DiskMon.exe test-email          # confirm the mail route works
+.\DiskSpaceMon.exe check          # confirm it reads what you meant
+.\DiskSpaceMon.exe test-email     # confirm the mail route works
 
-.\DiskMon.exe install             # elevated prompt
-.\DiskMon.exe start
+.\DiskSpaceMon.exe install        # elevated prompt
+.\DiskSpaceMon.exe start
 ```
 
 `check` exits 0 when every volume is healthy, 2 when one is low, and 1 when one could not be read,
@@ -56,31 +56,31 @@ so it also works as a monitoring probe.
 
 | Command | What it does |
 |---|---|
-| `DiskMon` or `DiskMon run` | Monitor continuously. Hosts itself as a Windows service or as a terminal application, whichever it was started as. |
-| `DiskMon check` | Read every configured volume once, print the table above, exit. |
-| `DiskMon test-email` | Send one alert email using the current readings. Every readable volume is reported as a breach, so the test works whether or not a disk happens to be full. |
-| `DiskMon preview` | Render both emails to `preview-alert.html` and `preview-recovery.html` beside the executable, without sending. Open them in a browser while editing a template. |
-| `DiskMon install` | Register the Windows service, set it to start automatically, give it restart-on-failure, and create its Event Log source. Needs an elevated prompt. |
-| `DiskMon uninstall` | Stop and remove the service. Needs an elevated prompt. |
-| `DiskMon start` / `stop` / `status` | Control the installed service. |
-| `DiskMon help` | Print the above. |
+| `DiskSpaceMon` or `DiskSpaceMon run` | Monitor continuously. Hosts itself as a Windows service or as a terminal application, whichever it was started as. |
+| `DiskSpaceMon check` | Read every configured volume once, print the table above, exit. |
+| `DiskSpaceMon test-email` | Send one alert email using the current readings. Every readable volume is reported as a breach, so the test works whether or not a disk happens to be full. |
+| `DiskSpaceMon preview` | Render both emails to `preview-alert.html` and `preview-recovery.html` beside the executable, without sending. Open them in a browser while editing a template. |
+| `DiskSpaceMon install` | Register the Windows service, set it to start automatically, give it restart-on-failure, and create its Event Log source. Needs an elevated prompt. |
+| `DiskSpaceMon uninstall` | Stop and remove the service. Needs an elevated prompt. |
+| `DiskSpaceMon start` / `stop` / `status` | Control the installed service. |
+| `DiskSpaceMon help` | Print the above. |
 
 The service verbs shell out to `sc.exe`. If you would rather script it yourself, `install` is
 equivalent to:
 
 ```powershell
-sc.exe create DiskMon binPath= "C:\Apps\DiskMon\DiskMon.exe" start= auto DisplayName= "DiskMon Disk Space Monitor"
-sc.exe description DiskMon "Watches free space on the volumes listed in settings/settings.xml..."
-sc.exe failure DiskMon reset= 86400 actions= restart/60000/restart/60000/restart/60000
+sc.exe create DiskSpaceMon binPath= "C:\Apps\DiskSpaceMon\DiskSpaceMon.exe" start= auto DisplayName= "DiskSpaceMon"
+sc.exe description DiskSpaceMon "Watches free space on the volumes listed in settings/settings.xml..."
+sc.exe failure DiskSpaceMon reset= 86400 actions= restart/60000/restart/60000/restart/60000
 ```
 
-`uninstall` is `sc.exe stop DiskMon` followed by `sc.exe delete DiskMon`.
+`uninstall` is `sc.exe stop DiskSpaceMon` followed by `sc.exe delete DiskSpaceMon`.
 
 ### Which account should it run as
 
 `LocalSystem` (the default) can read every local volume and write the log and state folders. If you
 run it as a named account instead, give that account write access to the application folder, and
-run `DiskMon install` once as an administrator first so the Event Log source exists — creating one
+run `DiskSpaceMon install` once as an administrator first so the Event Log source exists — creating one
 needs rights the service itself should not have.
 
 ---
@@ -88,7 +88,7 @@ needs rights the service itself should not have.
 ## Settings
 
 `settings/settings.xml`, beside the executable. Edits take effect within a few seconds; there is no
-need to restart. If an edit leaves the file unreadable, DiskMon logs the problem and keeps running
+need to restart. If an edit leaves the file unreadable, DiskSpaceMon logs the problem and keeps running
 on the last settings that loaded cleanly, so a typo does not take the monitoring down with it.
 
 Two conventions worth knowing before you edit:
@@ -169,18 +169,18 @@ leaves nothing behind except the file.
 ## Secrets, and overriding anything from the environment
 
 Every setting can be overridden by an environment variable, which is where credentials belong. The
-name is `DISKMON_` followed by the path to the value with `__` (two underscores) between the levels:
+name is `DISKSPACEMON_` followed by the path to the value with `__` (two underscores) between the levels:
 
 ```powershell
-DISKMON_email__smtp__password = "..."
-DISKMON_email__graph__clientSecret = "..."
-DISKMON_email__to = "oncall@example.com"
-DISKMON_monitoring__disks__0__minFreePercent = "15"
+DISKSPACEMON_email__smtp__password = "..."
+DISKSPACEMON_email__graph__clientSecret = "..."
+DISKSPACEMON_email__to = "oncall@example.com"
+DISKSPACEMON_monitoring__disks__0__minFreePercent = "15"
 ```
 
 The environment is layered on top of the file and wins, so a value set there does not need removing
 from `settings.xml`. In Azure, an app setting of that name arrives as exactly this variable; in a
-container, so does `-e DISKMON_email__smtp__password=...`.
+container, so does `-e DISKSPACEMON_email__smtp__password=...`.
 
 There is no encryption. Either supply secrets through the environment, or restrict the file's ACL
 to the service account.
@@ -191,7 +191,7 @@ to the service account.
 
 Bodies are HTML files under `settings/templates/`, rendered by
 [Com.H.Text.Template2](https://github.com/H7O/Com.H.Text.Template2). Edit them in place; there is
-nothing to rebuild. `DiskMon preview` renders both to files you can open in a browser.
+nothing to rebuild. `DiskSpaceMon preview` renders both to files you can open in a browser.
 
 Each email is two files: the page (`alert.html`) and the row that repeats once per volume
 (`alert-rows.html`), pulled in with `<h-embedded-template>`. The split is what keeps the table
@@ -201,7 +201,7 @@ header out of the repetition.
 
 | Marker | Example |
 |---|---|
-| `{{appName}}` | `DiskMon` |
+| `{{appName}}` | `DiskSpaceMon` |
 | `{{machineName}}` | `SQL-PROD-02` |
 | `{{summary}}` | `2 volumes below threshold` |
 | `{{diskCount}}` | `2` |
@@ -230,7 +230,7 @@ The page's values stay in scope inside the row file, so a row can use `{{machine
 
 Three things to know when editing a template:
 
-**Wrap values in `{html{...}}`, not `{{...}}`.** A volume label is not something DiskMon chose, and
+**Wrap values in `{html{...}}`, not `{{...}}`.** A volume label is not something DiskSpaceMon chose, and
 `{html{name}}` escapes it. `{{name}}` writes it verbatim, which a label containing `&` or `<` would
 break.
 
@@ -238,7 +238,7 @@ break.
 not know what a comment is, so `{{name}}` written in one is substituted and ends up in the email.
 That is why the shipped templates document their values here rather than in themselves.
 
-**Do not empty the `<h-embedded-data>` block.** `<![CDATA[disks]]>` names the set of rows DiskMon
+**Do not empty the `<h-embedded-data>` block.** `<![CDATA[disks]]>` names the set of rows DiskSpaceMon
 supplies. An empty block has no data source at all, and the file would then render once, with no
 volume in it.
 
@@ -285,7 +285,7 @@ starting a six-hour silence exactly when someone needed to hear about it.
 ## How it is put together
 
 ```
-src/DiskMon/
+src/DiskSpaceMon/
   Program.cs               startup: service-or-terminal detection, configuration, DI
   settings/                settings.xml and the email templates - copied to the output
   Configuration/           the XML configuration provider, the settings model, the validator
@@ -293,7 +293,7 @@ src/DiskMon/
   Notifications/           rendering the emails and sending them
   Hosting/                 the worker, the commands, the sc.exe wrapper
   Com.H/Template2/         a verbatim copy of Com.H.Text.Template2 (see its VENDORED.md)
-tests/DiskMon.Tests/
+tests/DiskSpaceMon.Tests/
 docs/TODO.md               follow-ups worth doing, and the reasoning behind each
 ```
 
@@ -309,7 +309,7 @@ Every relative path is resolved against `AppContext.BaseDirectory`, because a Wi
 with its working directory set to `C:\Windows\System32` — a service anchored to the working
 directory would look for its templates somewhere in Windows.
 
-### Why the XML configuration provider is DiskMon's own
+### Why the XML configuration provider is DiskSpaceMon's own
 
 `Microsoft.Extensions.Configuration.Xml` rejects two sibling elements with the same name unless each
 carries a `Name` attribute, which then becomes part of the key. Expressing a list of disks through it
@@ -317,7 +317,7 @@ means hand-maintaining `Name="0"`, `Name="1"` indices in the file — and deleti
 leaves a gap that silently truncates the bound list. For a file a DevOps engineer edits by hand that
 is the wrong trade, so `Configuration/XmlSettingsParser.cs` indexes repeated elements itself.
 
-Which sections are lists is declared in code (`DiskMonSettings.CollectionPaths`), by path, rather
+Which sections are lists is declared in code (`DiskSpaceMonSettings.CollectionPaths`), by path, rather
 than guessed from the document. A single-entry list and a section with one child element look
 identical, so any heuristic would break the moment someone deleted the second disk.
 
@@ -329,8 +329,8 @@ and the environment-variable layer all come for free.
 ## Building and testing
 
 ```powershell
-dotnet build DiskMon.slnx
-dotnet test  DiskMon.slnx
+dotnet build DiskSpaceMon.slnx
+dotnet test  DiskSpaceMon.slnx
 ```
 
 The tests run the shipped `settings.xml` and the shipped email templates as they are, not copies of
@@ -342,7 +342,7 @@ the real engine.
 Publishing for deployment:
 
 ```powershell
-dotnet publish src/DiskMon/DiskMon.csproj -c Release -o C:\Apps\DiskMon
+dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj -c Release -o C:\Apps\DiskSpaceMon
 ```
 
 `settings/` is copied with `PreserveNewest`, so republishing over a deployed folder leaves an edited

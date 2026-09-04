@@ -12,7 +12,7 @@ re-derive the decision.
 `D:\` go low last quarter, and for how long each time?"* can be answered by a query rather than by
 reading a year of log files.
 
-**Why it is not the current state store.** DiskMon already survives a restart:
+**Why it is not the current state store.** DiskSpaceMon already survives a restart:
 `JsonAlertStateStore` writes `state/alert-state.json` through a temp file and an atomic move, and
 the worker loads it at startup, so a disk that was already reported is not re-alerted. Swapping
 that for SQLite would add `Microsoft.Data.Sqlite`, the SQLitePCLRaw native binaries in every
@@ -27,7 +27,7 @@ Those are different features, and the second is the one worth the dependency.
 **Shape.** Add it *alongside* the JSON state store, not in place of it. `AlertCoordinator` already
 produces exactly the events to record — each `AlertDecision` carries the volume, the action
 (`Alert`, `ReAlert`, `Recovered`), the reasons and `FirstBreachUtc`. Write one row per decision
-the worker commits, in `DiskMonitorWorker.ReportAsync`, next to the existing `Commit` call.
+the worker commits, in `DiskSpaceMonitorWorker.ReportAsync`, next to the existing `Commit` call.
 
 ```sql
 create table if not exists alert_history (
@@ -68,7 +68,7 @@ concatenated.
 
 **Keep it provider-agnostic.** Take the provider name from settings rather than hard-coding
 SQLite, and create the connection with `connectionString.CreateDbConnection(providerName)`. An
-operator who already runs SQL Server then points DiskMon at it by changing three settings and the
+operator who already runs SQL Server then points DiskSpaceMon at it by changing three settings and the
 statements in `sql.xml`, with no code change. That is the whole reason to route through
 `Com.H.Data.Common` rather than talking to SQLite directly.
 
@@ -79,7 +79,7 @@ without `DbProviderFactories.RegisterFactory("Microsoft.Data.Sqlite", SqliteFact
 throws a message about a missing provider.
 
 Resolve a relative SQLite `Data Source` against `AppContext.BaseDirectory` before opening the
-connection. A Windows service starts in `C:\Windows\System32`, so `Data Source=state/diskmon.db`
+connection. A Windows service starts in `C:\Windows\System32`, so `Data Source=state/diskspacemon.db`
 would quietly create the database there. Only do this for SQLite: for SQL Server, `Data Source`
 is a server name, and rewriting it as a path would be wrong.
 
@@ -102,20 +102,20 @@ touched by a publish, and the refreshed default doubles as the reference to diff
 upgrade to see what settings are new.
 
 Not done yet because it trades one small surprise for another: a first-time user would not find
-`settings.xml` until they ran DiskMon once, and being able to find it immediately was the point of
+`settings.xml` until they ran DiskSpaceMon once, and being able to find it immediately was the point of
 the `settings/` folder.
 
 ---
 
 ## 3. Validate recipient addresses at startup
 
-`DiskMonSettingsValidator` checks that *at least one* recipient exists, but not that any of them
+`DiskSpaceMonSettingsValidator` checks that *at least one* recipient exists, but not that any of them
 parses. Both senders drop malformed addresses silently — `Com.H.Net.Mail.Message` filters through
 `IsEmail()`, and `Com.H.GraphAPI` leaves them out of the payload. So a typo in `<to>` means alerts
 go nowhere and nothing says so.
 
 `Com.H.Net.Mail.MailExtensions.IsEmail()` is already available. Reject an unparseable address in
-the validator, naming it, so the mistake is caught by `DiskMon check` rather than during an
+the validator, naming it, so the mistake is caught by `DiskSpaceMon check` rather than during an
 incident.
 
 ---
@@ -123,7 +123,7 @@ incident.
 ## 4. Test the worker loop itself
 
 Every piece the worker orchestrates is tested — threshold evaluation, the alert state machine, the
-templates, the configuration parser — but `DiskMonitorWorker` is not. The behaviour worth pinning
+templates, the configuration parser — but `DiskSpaceMonitorWorker` is not. The behaviour worth pinning
 is the part that is easy to break and impossible to notice: that a malformed `settings.xml` saved
 mid-run falls back to the last good copy and keeps sweeping, and that a sweep which throws does
 not end the loop.

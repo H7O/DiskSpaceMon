@@ -368,18 +368,18 @@ FodyWeavers.xsd
 .claude/
 
 # ---------------------------------------------------------------------------
-# DiskMon
+# DiskSpaceMon
 # ---------------------------------------------------------------------------
 
 # Written by the running service, next to the executable.
 logs/
 state/
 
-# Written by 'DiskMon preview'.
+# Written by 'DiskSpaceMon preview'.
 preview-*.html
 
 # A deployed settings.xml holds real addresses and, if the environment is not
-# used for them, real credentials. The one under src/DiskMon/settings/ is the
+# used for them, real credentials. The one under src/DiskSpaceMon/settings/ is the
 # shipped template and IS tracked; anything that lands in an output folder is not.
 **/bin/**/settings/
 **/obj/**/settings/
