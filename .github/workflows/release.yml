@@ -46,24 +46,34 @@ jobs:
       - name: Test
         run: dotnet test DiskSpaceMon.slnx -c Release --nologo
 
-      # Two builds, because the right answer depends on the server. Framework-dependent is a
-      # 5 MB folder that needs the .NET 10 runtime installed. Portable is one 37 MB executable
-      # with the runtime bundled inside it, so the server needs nothing at all; the csproj turns
-      # a self-contained publish into that single compressed file, so there is nothing to pass
-      # here beyond the switch.
-      - name: Publish, framework-dependent
-        run: >
-          dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj
-          -c Release -r win-x64 --self-contained false
-          -p:Version=${{ steps.version.outputs.version }}
-          -o publish/framework-dependent
+      # Four downloads: two architectures, and for each the choice between a small folder that
+      # needs the .NET 10 runtime installed and one executable with the runtime bundled inside it
+      # that needs nothing at all. The csproj turns a self-contained publish into that single
+      # compressed file, so there is nothing to pass here beyond the switch.
+      #
+      # arm64 is cross-published from this x64 runner. Nothing is compiled natively, so the
+      # output is a real ARM64 binary; it simply cannot be run here to prove it.
+      - name: Publish
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
 
-      - name: Publish, portable
-        run: >
-          dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj
-          -c Release -r win-x64 --self-contained true
-          -p:Version=${{ steps.version.outputs.version }}
-          -o publish/portable
+          foreach ($rid in 'win-x64', 'win-arm64') {
+            foreach ($flavour in 'framework-dependent', 'portable') {
+              $selfContained = if ($flavour -eq 'portable') { 'true' } else { 'false' }
+
+              dotnet publish src/DiskSpaceMon/DiskSpaceMon.csproj `
+                -c Release -r $rid --self-contained $selfContained `
+                -p:Version=$env:VERSION `
+                -o "publish/$rid-$flavour"
+
+              # A failing dotnet does not stop a PowerShell loop on its own, and a silently empty
+              # publish would be packaged and released as though it worked.
+              if ($LASTEXITCODE -ne 0) { throw "publish failed: $rid $flavour" }
+            }
+          }
 
       - name: Package
         shell: pwsh
@@ -73,12 +83,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           New-Item -ItemType Directory -Force dist | Out-Null
 
-          foreach ($flavour in 'framework-dependent', 'portable') {
+          foreach ($build in Get-ChildItem publish -Directory) {
             # So whoever unzips it on a server has the settings reference and the licence to hand.
-            Copy-Item README.md, LICENSE "publish/$flavour/"
+            Copy-Item README.md, LICENSE $build.FullName
 
-            $zip = "dist/DiskSpaceMon-$env:VERSION-win-x64-$flavour.zip"
-            Compress-Archive -Path "publish/$flavour/*" -DestinationPath $zip
+            $zip = "dist/DiskSpaceMon-$env:VERSION-$($build.Name).zip"
+            Compress-Archive -Path "$($build.FullName)/*" -DestinationPath $zip
             Write-Host "$zip  $([math]::Round((Get-Item $zip).Length / 1MB, 1)) MB"
           }
 

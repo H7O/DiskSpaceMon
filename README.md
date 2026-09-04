@@ -376,9 +376,14 @@ that does not build never becomes a release. It then attaches two zips for Windo
 | Download | Unpacks to | Needs |
 |---|---|---|
 | `…-win-x64-portable.zip` | one 37 MB `DiskSpaceMon.exe` plus `settings\` | **nothing** — the .NET runtime is inside the executable |
+| `…-win-arm64-portable.zip` | the same, built for ARM64 | **nothing** |
 | `…-win-x64-framework-dependent.zip` | a 5 MB folder of assemblies plus `settings\` | the .NET 10 runtime installed on the server |
+| `…-win-arm64-framework-dependent.zip` | the same, built for ARM64 | the .NET 10 ARM64 runtime installed |
 
-Both also carry the README and the licence. Unzip, edit `settings\settings.xml`, run
+Take x64 unless the machine is ARM — Azure's Cobalt and Ampere VM sizes, or Windows on a Snapdragon
+box. `echo %PROCESSOR_ARCHITECTURE%` says which you are on: `AMD64` or `ARM64`.
+
+All four carry the README and the licence too. Unzip, edit `settings\settings.xml`, run
 `DiskSpaceMon.exe check`. A tag with a hyphen in it (`v1.0.0-beta.1`) is published as a
 prerelease, so it does not become the repository's *latest*.
 
